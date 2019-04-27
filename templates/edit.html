@@ -6,7 +6,12 @@
     <h2>My Watchlist</h2>
     <ul>
         {% for movie in watchlist %}
-        <li>{{ movie }}</li>
+        <li>
+        <form class="inline" action="/crossoff" method="post">
+            <input type="text" name="crossed-off-movie" value="{{movie}}">
+            <input type="submit" value="I watched it!">
+        </form>
+        </li>
         {% endfor %}
     </ul>
     {% endif %}
@@ -20,21 +25,6 @@
             to my watchlist.
         </label>
     </form>
-
-    {% if watchlist|length > 0 %}
-    <form action="/crossoff" method="post">
-        <label>
-            I want to cross off
-            <select name="crossed-off-movie">
-                {% for movie in watchlist %}
-                    <option value="{{movie}}"> {{movie}} </option>
-                {% endfor %}
-            </select>
-            from my watchlist
-        </label>
-        <input type="submit" value="Cross It Off">
-    </form>
-    {% endif %}
 
     <h2><a href="/ratings">Ratings</a></h2>
 
