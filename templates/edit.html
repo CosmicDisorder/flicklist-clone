@@ -7,7 +7,7 @@
     <ul>
         {% for movie in watchlist %}
         <li>
-        <form class="inline" action="/crossoff" method="post">
+        <form class="inline" action="/crossoff" method="POST">
             <input type="text" name="crossed-off-movie" value="{{movie}}">
             <input type="submit" value="I watched it!">
         </form>
@@ -18,7 +18,7 @@
 
     <h2>Edit My Watchlist</h2>
 
-    <form action="/add" method="post">
+    <form action="/add" method="POST">
         <label>
             I want to add
             <input type="text" name="new-movie">

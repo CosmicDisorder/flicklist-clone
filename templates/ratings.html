@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+{% if watched_movies|length > 0 %}
+
+    <h2>Movies I have Watched</h2>
+
+    {% for movie in watched_movies %}
+    <form action="/rating-confirmation" method="POST">
+        <input type="text" name="rated-movie" value="{{movie}}">
+        <select name="rating">
+            {% for rating_option in ratings %}
+                <option value="{{rating_option}}"">{{rating_option}}</option>
+            {% endfor %}
+            <input type="submit" value="Rate it!">
+        </select>
+    </form>
+    {% endfor %}
+{% endif %}
+{% endblock %}

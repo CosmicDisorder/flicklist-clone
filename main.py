@@ -27,26 +27,36 @@ watched_movies = [
     "Clerks"
 ]
 
+ratings = [
+    "*",
+    "**",
+    "***",
+    "****",
+    "*****"
+]
 def get_current_watchlist():
     return current_watchlist
 
 def get_watched_movies():
     return watched_movies
 
+def get_ratings():
+    return ratings
+
 @app.route("/ratings", methods=['GET'])
 def movie_ratings():
-    return render_template("ratings.html", ratings=ratings)
+    return render_template("ratings.html", watched_movies=watched_movies, ratings=ratings)
 
 @app.route("/crossoff", methods=['POST'])
 def crossoff_movie():
     crossed_off_movie = request.form['crossed-off-movie']
-
-    if crossed_off_movie not in get_current_watchlist():
-        error = "'{0}' is not in your Watchlist, no dice broseph".format(crossed_off_movie)
-        
-        return redirect("/?error=" + error)
-    
     return render_template('crossoff.html', crossed_off_movie=crossed_off_movie)
+
+@app.route("/rating-confirmation", methods=['POST'])
+def confirm_rating():
+    rating = request.form['rating']
+    rated_movie = request.form ['rated-movie']
+    return render_template('rating-confrimation.html', rating=rating, rated_movie=rated_movie)
 
 @app.route("/add", methods =['POST'])
 def add_movie():
