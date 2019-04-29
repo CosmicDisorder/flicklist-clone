@@ -4,7 +4,7 @@ import cgi
 
 app = Flask(__name__)
 app.config['DEBUG'] = True      # displays runtime errors in the browser, too
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://flicklist:MyNewPass@localhost:8889/flicklist'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://flicklist-clone:beproductive@localhost:8889/flicklist-clone'
 app.config['SQLALCHEMY_ECHO'] = True
 
 db = SQLAlchemy(app)
@@ -25,7 +25,7 @@ class Movie(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120))
     watched = db.Column(db.Boolean)
-    rating = db.Column(db.String(20))
+    rating = db.Column(db.String(6))
 
     def __init__(self, name):
         self.name = name
@@ -49,32 +49,46 @@ def get_current_watchlist():
 def get_watched_movies():
     return Movie.query.filter_by(watched=True).all()
 
-# TODO 3: Add "/login" GET and POST routes.
-# TODO 4: Create login template with username and password.
-#         Notice that we've already created a 'login' link in the upper-right corner of the page that'll connect to it.
+
+@app.route("/login", methods = ['POST', 'GET'])
+def login():
+    if request.method =='POST':
+        email = request.form['email']
+        password = request.form['password']
+        user = User.query.filter_by(email=email).first()
+        if user and password == user.password:
+            session['email'] = email
+            flash("Welcome back, {0}".format(user.email), "success")
+            return redirect("/")
+        else:
+            flash("User password is incorrect or user doesn't exist", "error")
+        
+    return render_template("login.html")
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        if not is_email(email):
-            flash('zoiks! "' + email + '" does not seem like an email address')
-            return redirect('/register')
-        # TODO 1: validate that form value of 'verify' matches password
-        # TODO 2: validate that there is no user with that email already
-        user = User(email=email, password=password)
-        db.session.add(user)
-        db.session.commit()
-        session['user'] = user.email
-        return redirect("/")
-    else:
-        return render_template('register.html')
+        verify = request.form['verify']
+        existing_user = User.query.filter_by(email=email).first()
+        if not existing_user:
+            if not is_email(email): 
+                flash('zoiks! "' + email + '" does not seem like an email address')
+                return redirect('/register')
+            if verify == password:
+                user = User(email=email, password=password)
+                db.session.add(user)
+                db.session.commit()
+                session['user'] = user.email
+                return redirect("/")
+            flash("whoopsiedoda, yer passwords aren't matchin'", "error")
+        else:
+            flash("big oof dog, yer already registered", "error")
+    return render_template('register.html')
+
 
 def is_email(string):
-    # for our purposes, an email string has an '@' followed by a '.'
-    # there is an embedded language called 'regular expression' that would crunch this implementation down
-    # to a one-liner, but we'll keep it simple:
     atsign_index = string.find('@')
     atsign_present = atsign_index >= 0
     if not atsign_present:
@@ -86,32 +100,22 @@ def is_email(string):
 
 @app.route("/logout", methods=['POST'])
 def logout():
-    del session['user']
+    del session['email']
+    flash("you have been logged out", "success")
     return redirect("/")
 
-# Create a new route called rate_movie which handles a POST request on /rating-confirmation
 @app.route("/rating-confirmation", methods=['POST'])
 def rate_movie():
     movie_id = request.form['movie_id']
     rating = request.form['rating']
 
     movie = Movie.query.get(movie_id)
-    if movie not in get_watched_movies():
-        # the user tried to rate a movie that isn't in their list,
-        # so we redirect back to the front page and tell them what went wrong
-        error = "'{0}' is not in your Watched Movies list, so you can't rate it!".format(movie)
-
-        # redirect to homepage, and include error as a query parameter in the URL
-        return redirect("/?error=" + error)
-
-    # if we didn't redirect by now, then all is well
     movie.rating = rating
     db.session.add(movie)
     db.session.commit()
+
     return render_template('rating-confirmation.html', movie=movie, rating=rating)
 
-
-# Creates a new route called movie_ratings which handles a GET on /ratings
 @app.route("/ratings", methods=['GET'])
 def movie_ratings():
     return render_template('ratings.html', movies = get_watched_movies())
@@ -123,9 +127,9 @@ def crossoff_movie():
 
     crossed_off_movie = Movie.query.get(crossed_off_movie_id)
     if not crossed_off_movie:
-        return redirect("/?error=Attempt to watch a movie unknown to this database")
+        flash("error=Attempt to watch a movie unknown to this database", "error")
+        return redirect("/")
 
-    # if we didn't redirect by now, then all is well
     crossed_off_movie.watched = True
     db.session.add(crossed_off_movie)
     db.session.commit()
@@ -133,18 +137,16 @@ def crossoff_movie():
 
 @app.route("/add", methods=['POST'])
 def add_movie():
-    # look inside the request to figure out what the user typed
     new_movie_name = request.form['new-movie']
 
-    # if the user typed nothing at all, redirect and tell them the error
     if (not new_movie_name) or (new_movie_name.strip() == ""):
-        error = "Please specify the movie you want to add."
-        return redirect("/?error=" + error)
+        flash("Please specify the movie you want to add.", "error")
+        return redirect("/")
 
     # if the user wants to add a terrible movie, redirect and tell them the error
     if new_movie_name in terrible_movies:
-        error = "Trust me, you don't want to add '{0}' to your Watchlist".format(new_movie_name)
-        return redirect("/?error=" + error)
+        flash("Trust me, you don't want to add '{0}' to your Watchlist".format(new_movie_name), "error")
+        return redirect("/")
 
     movie = Movie(new_movie_name)
     db.session.add(movie)
@@ -160,13 +162,11 @@ def index():
 #         It should contain 'register' and 'login'.
 @app.before_request
 def require_login():
-    if not ('user' in session or request.endpoint == 'register'):
-        return redirect("/register")
+    allowed_routes = ['login', 'register']
+    if (request.endpoint not in allowed_routes) and ('email' not in session):
+        flash("Please log in", "errror")
+        return redirect("/login")
 
-# In a real application, this should be kept secret (i.e. not on github)
-# As a consequence of this secret being public, I think connection snoopers or
-# rival movie sites' javascript could hijack our session and act as us,
-# perhaps giving movies bad ratings - the HORROR.
 app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RU'
 
 if __name__ == "__main__":

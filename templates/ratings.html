@@ -4,7 +4,7 @@
 <h2>Movies I Have Watched:</h2>
 
 <ul>
-  {% for movie in movies %}
+  {% for movie in watchedlist %}
     <li>
       <h3>{{ movie.name }}</h3>
       <form action="/rating-confirmation" method="post">
@@ -12,7 +12,11 @@
           My Rating:
           <select name="rating">
             {% for rating in ["How was it?", "*", "**", "***", "****", "*****"] %}
-              <option {% if rating==movie.rating %}selected{% endif %}>{{ rating }}</option>
+              {% if movie.rating %}
+                <option {% if rating==movie.rating %}selected{% endif %}>{{ rating }}</option>
+              {% else %}
+                <option {% if rating=="How was it?" %}selected{% endif %}>{{ rating }}</option>
+              {% endif %}
             {% endfor %}
           </select>
         </label>

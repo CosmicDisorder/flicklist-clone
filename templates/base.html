@@ -10,27 +10,25 @@
     </head>
     <body>
         <div style='float: right'>
-          {% if 'user' in session %}
-            {{ session['user'] }}
+          {% if 'email' in session %}
+            {{ session['email'] }}
             <form action="/logout" method="post">
               <input type="submit" value="Log Out" />
             </form>
           {% else %}
-            <a href="login">login</a> | <a href="register">register</a>
+            <a href="/login">login</a> | <a href="/register">register</a>
           {% endif %}
         </div>
         <h1>
             <a href="/">FlickList</a>
         </h1>
 
-        {% with messages = get_flashed_messages() %}
-          {% if messages %}
+        {% with messages = get_flashed_messages(with_categories=True) %}
             <ul class=flashes>
-              {% for message in messages %}
-              <li>{{ message }}</li>
+              {% for category,message in messages %}
+              <li class="{{category}}">{{ message }}</li>
               {% endfor %}
             </ul>
-          {% endif %}
         {% endwith %}
 
         {% block content %}
