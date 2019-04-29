@@ -118,7 +118,7 @@ def rate_movie():
 
 @app.route("/ratings", methods=['GET'])
 def movie_ratings():
-    return render_template('ratings.html', movies = get_watched_movies())
+    return render_template('ratings.html', watchedlist = get_watched_movies())
 
 
 @app.route("/crossoff", methods=['POST'])
